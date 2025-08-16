@@ -7,7 +7,7 @@ It provides foundation and abstractions for working with process manipulation, m
 WinHack currently targets:
 
 - Windows 11 and Windows 10 (2004+)
-- 64-bit (no intention on supporting 32-bit, since nearly all current machines run 64-bit)
+- 64-bit (No intention on supporting 32-bit, since nearly all current machines run 64-bit)
 - .NET 8 (With possible support for lower versions in the future up to .NET 6)
 
 

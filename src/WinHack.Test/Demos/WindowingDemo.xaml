@@ -1,0 +1,71 @@
+﻿<Window x:Class="WinHack.Test.WindowingDemo"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:WinHack.Test"
+        mc:Ignorable="d"
+								x:Name="root"
+        Title="WindowingDemo" Height="450" Width="800"
+								Loaded="Window_Loaded">
+				<Grid>
+								<Grid>
+												<Grid.RowDefinitions>
+																<RowDefinition Height="Auto"/>
+																<RowDefinition Height="*"/>
+												</Grid.RowDefinitions>
+												<StackPanel Grid.Row="0">
+																<Button x:Name="testButton" Click="testButton_Click">Refresh</Button>
+																<TextBox x:Name="testListSearch" TextChanged="testListSearch_TextChanged" />
+												</StackPanel>
+
+												<TreeView
+																x:Name="testList"
+																Grid.Row="1"
+																VirtualizingStackPanel.IsVirtualizing="True"
+																VirtualizingStackPanel.VirtualizationMode="Recycling">
+																<TreeView.ItemTemplate>
+																				<HierarchicalDataTemplate ItemsSource="{Binding Children}">
+																								<StackPanel Orientation="Horizontal">
+																												<TextBlock>
+																																<Bold><Run>Title: </Run></Bold>
+																																<Run Text="{Binding Window.Title, Mode=OneWay}" />
+																												</TextBlock>
+																												<TextBlock Margin="4,0">
+																																<Bold><Run>|</Run></Bold>
+																												</TextBlock>
+																												<TextBlock>
+																																<Bold><Run>ClassName: </Run></Bold>
+																																<Run Text="{Binding Window.ClassName, Mode=OneWay}" />
+																												</TextBlock>
+
+																												<StackPanel.ContextMenu>
+																																<ContextMenu DataContext="{Binding Path=PlacementTarget.DataContext, RelativeSource={RelativeSource Self}}">
+																																				<MenuItem Header="{Binding Window.Title, Mode=OneWay}"/>
+																																				<MenuItem Header="Draw Test" Command="{Binding DrawTestCommand}" />
+																																				<MenuItem 
+																																								Header="Query Children"
+																																								Command="{Binding QueryChildWindowsCommand}"	
+																																								/>
+																																				<MenuItem 
+																																									Header="Query Children Recursively"
+																																									Command="{Binding QueryChildWindowsRecursiveCommand}"	
+																																					/>
+																																				<Separator />
+																																				<MenuItem 
+																																										Header="Properties"
+																																										Command="{Binding PropertiesCommand}"	
+																																						/>
+																																</ContextMenu>
+																												</StackPanel.ContextMenu>
+																								</StackPanel>
+																				</HierarchicalDataTemplate>
+																				<!--<GridView>
+																								<GridViewColumn DisplayMemberBinding="{Binding Path=Title}" Header="Title" Width="400" />
+																								<GridViewColumn DisplayMemberBinding="{Binding Path=ClassName}" Header="ClassName" Width="400" />
+																				</GridView>-->
+																</TreeView.ItemTemplate>
+												</TreeView>
+								</Grid>
+				</Grid>
+</Window>

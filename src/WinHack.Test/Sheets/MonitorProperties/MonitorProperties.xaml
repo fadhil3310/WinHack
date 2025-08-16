@@ -1,0 +1,25 @@
+﻿<Window x:Class="WinHack.Test.Sheets.MonitorProperties.MonitorProperties"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:WinHack.Test.Sheets.MonitorProperties"
+								xmlns:tabs="clr-namespace:WinHack.Test.Sheets.MonitorProperties.Tabs"
+        mc:Ignorable="d"
+								x:Name="root"
+								DataContext="{Binding RelativeSource={RelativeSource Self}}"
+        Title="MonitorProperties" Height="312" Width="214">
+    <Grid>
+								<TabControl>
+												<TabItem Header="Settings">
+																<Grid>
+																				<tabs:SettingsTab SelectedMonitor="{Binding SelectedMonitor, Mode=OneWay, ElementName=root}" />
+																</Grid>
+												</TabItem>
+												<TabItem Header="TabItem">
+																<Grid Background="#FFE5E5E5"/>
+												</TabItem>
+								</TabControl>
+
+				</Grid>
+</Window>

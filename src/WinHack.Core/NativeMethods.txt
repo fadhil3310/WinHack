@@ -1,0 +1,75 @@
+﻿# ========= Windowing =========
+EnumWindows
+EnumChildWindows
+GetWindowText
+GetWindowTextLength
+GetClassName
+GetWindow
+IsWindow
+GetWindowRect
+GetClientRect
+SetWindowPos
+SetParent
+ShowWindow
+SetWindowsHookEx
+GetWindowThreadProcessId
+CallNextHookEx
+
+# Constants/Structs
+HWND_BOTTOM
+HWND_NOTOPMOST
+HWND_TOP
+HWND_TOPMOST
+CWPSTRUCT
+
+
+# ========= Screen =========
+EnumDisplayMonitors
+EnumDisplaySettings
+MonitorFromWindow
+ChangeDisplaySettingsEx
+
+
+# ========= GDI =========
+GetDC
+CreateDC
+ReleaseDC
+CreateCompatibleDC
+CreateCompatibleBitmap
+CreateSolidBrush
+CreateHatchBrush
+Rectangle
+FillRect
+DeleteObject
+BitBlt
+GetDeviceCaps
+SelectObject
+SetBkMode
+SetBkColor
+GetDIBits
+BITMAP
+GetObject
+GetPixel
+DeleteObject
+DeleteDC
+
+# Constants.Structs
+RECT
+BITMAPFILEHEADER
+
+
+# ========= FILE =========
+CreateFile
+WriteFile
+CloseHandle
+
+
+# ========= SYSTEM =========
+GetModuleHandle
+LoadLibrary
+GetProcAddress
+OpenProcess
+IsWow64Process
+GetProcessId
+GetModuleFileName
+FormatMessage

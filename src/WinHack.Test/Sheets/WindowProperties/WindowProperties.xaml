@@ -1,0 +1,33 @@
+﻿<Window x:Class="WinHack.Test.Sheets.WindowProperties.WindowProperties"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:WinHack.Test.Sheets.WindowProperties"
+        xmlns:tabs="clr-namespace:WinHack.Test.Sheets.WindowProperties.Tabs"
+        mc:Ignorable="d"
+								x:Name="root"
+        Title="WindowProperties" Height="312" Width="214" 
+								Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}"
+								DataContext="{Binding RelativeSource={RelativeSource Self}}"
+								WindowStyle="ToolWindow">
+				<Grid>
+								<TabControl>
+												<TabItem Header="Properties">
+																<Grid>
+																				<tabs:PropertiesTab x:Name="propertiesTab" SelectedWindow="{Binding SelectedWindow, Mode=OneWay, ElementName=root}" />
+																</Grid>
+												</TabItem>
+												<TabItem Header="Commands">
+																<Grid>
+																				<tabs:CommandsTab x:Name="commandsTab" SelectedWindow="{Binding SelectedWindow, Mode=OneWay, ElementName=root}" />
+																</Grid>
+												</TabItem>
+												<TabItem Header="Graphic">
+																<Grid>
+																				<tabs:GraphicTab x:Name="graphicTab" SelectedWindow="{Binding SelectedWindow, Mode=OneWay, ElementName=root}" />
+																</Grid>
+												</TabItem>
+								</TabControl>
+				</Grid>
+</Window>

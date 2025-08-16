@@ -1,0 +1,16 @@
+﻿<Window x:Class="WinHack.Test.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:WinHack.Test"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="309" Width="198">
+				<Grid>
+								<StackPanel>
+												<TextBlock TextAlignment="Center" FontSize="20" Margin="0,0,0,8">Demo</TextBlock>
+												<Button x:Name="windowingButton" Click="windowingButton_Click">Windowing</Button>
+												<Button x:Name="monitorButton" Click="monitorButton_Click">Monitor</Button>
+								</StackPanel>
+				</Grid>
+</Window>

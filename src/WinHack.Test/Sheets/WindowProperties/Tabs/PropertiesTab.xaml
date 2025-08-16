@@ -1,0 +1,59 @@
+﻿<UserControl x:Class="WinHack.Test.Sheets.WindowProperties.Tabs.PropertiesTab"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:WinHack.Test.Sheets.WindowProperties.Tabs"
+             xmlns:converter="clr-namespace:WinHack.Test.Utility.Converters"
+             mc:Ignorable="d" 
+													DataContext="{Binding RelativeSource={RelativeSource Self}}"
+             d:DesignHeight="268" d:DesignWidth="208"
+													d:Background="White">
+    <Grid>
+								<Grid.Resources>
+												<converter:HWNDToHex x:Key="HWNDToHex" />
+								</Grid.Resources>
+								<Grid.RowDefinitions>
+												<RowDefinition Height="*" />
+												<RowDefinition Height="Auto" />
+								</Grid.RowDefinitions>
+								
+								<ScrollViewer VerticalScrollBarVisibility="Auto">
+												<StackPanel>
+																<TextBlock>ABc</TextBlock>
+																<Label Content="HWND:" Target="{Binding ElementName=hwndTextBox}" />
+																<TextBox x:Name="hwndTextBox" IsReadOnly="True" HorizontalContentAlignment="Stretch" Text="{Binding HWND, Mode=OneWay, Converter={StaticResource HWNDToHex}}" />
+
+																<Label Content="Title:" Target="{Binding ElementName=titleTextBox}" />
+																<TextBox x:Name="titleTextBox" IsReadOnly="True" HorizontalContentAlignment="Stretch" Text="{Binding Title, Mode=OneWay}" />
+
+																<Label Content="ClassName:" Target="{Binding ElementName=classnameTextBox}" />
+																<TextBox x:Name="classnameTextBox" IsReadOnly="True" HorizontalContentAlignment="Stretch" Text="{Binding ClassName, Mode=OneWay}" />
+
+																<Label Content="Position:" Target="{Binding ElementName=posXTextBox}" />
+																<Grid>
+																				<Grid.ColumnDefinitions>
+																								<ColumnDefinition Width="*" />
+																								<ColumnDefinition Width="*" />
+																				</Grid.ColumnDefinitions>
+																				<TextBox Grid.Column="0" x:Name="posXTextBox" IsReadOnly="True" Text="{Binding WindowSize.X, Mode=OneWay}" />
+																				<TextBox Grid.Column="1" x:Name="posYTextBox" IsReadOnly="True" HorizontalContentAlignment="Stretch" Text="{Binding WindowSize.Y, Mode=OneWay}" />
+																</Grid>
+
+																<Label Content="Size:" Target="{Binding ElementName=sizeWidthTextBox}" />
+																<Grid>
+																				<Grid.ColumnDefinitions>
+																								<ColumnDefinition Width="*" />
+																								<ColumnDefinition Width="*" />
+																				</Grid.ColumnDefinitions>
+																				<TextBox Grid.Column="0" x:Name="sizeWidthTextBox" IsReadOnly="True" HorizontalContentAlignment="Stretch" Text="{Binding WindowSize.Width, Mode=OneWay}" />
+																				<TextBox Grid.Column="1" x:Name="sizeHeightTextBox" IsReadOnly="True" HorizontalContentAlignment="Stretch" Text="{Binding WindowSize.Height, Mode=OneWay}" />
+																</Grid>
+												</StackPanel>
+								</ScrollViewer>
+
+								<StackPanel Grid.Row="1">
+												<Button Command="{Binding GetDataCommand}">Refresh</Button>
+								</StackPanel>
+				</Grid>
+</UserControl>

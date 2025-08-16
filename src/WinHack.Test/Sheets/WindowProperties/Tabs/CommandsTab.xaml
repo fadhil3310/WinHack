@@ -1,0 +1,41 @@
+﻿<UserControl x:Class="WinHack.Test.Sheets.WindowProperties.Tabs.CommandsTab"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:local="clr-namespace:WinHack.Test.Sheets.WindowProperties.Tabs"
+             mc:Ignorable="d" 
+             DataContext="{Binding RelativeSource={RelativeSource Self}}"
+             d:DesignHeight="268" d:DesignWidth="208"
+	            d:Background="White">
+    <StackPanel>
+								<GroupBox Header="Positioning">
+												<StackPanel>
+																<Label>Basic:</Label>
+																<Button Command="{Binding MinimizeCommand}">Minimize</Button>
+																<Button Command="{Binding MaximizeCommand}">Maximize</Button>
+																<Button Command="{Binding RestoreCommand}">Restore</Button>
+																<Button Command="{Binding HideCommand}">Hide</Button>
+																<Button Command="{Binding ShowCommand}">Show</Button>
+
+																<Label>Position (X, Y):</Label>
+																<Grid>
+																				<Grid.ColumnDefinitions>
+																								<ColumnDefinition Width="*" />
+																								<ColumnDefinition Width="*" />
+																				</Grid.ColumnDefinitions>
+																				<TextBox Grid.Column="0" x:Name="newPosXTextBox" />
+																				<TextBox Grid.Column="1" x:Name="newPosYTextBox" />
+																</Grid>
+																<Button Command="{Binding SetPositionCommand}">Set Position</Button>
+												</StackPanel>
+								</GroupBox>
+
+								<GroupBox Header="Hooks">
+												<StackPanel>
+																<Button Command="{Binding HookMessageCommand}">Hook message</Button>
+												</StackPanel>
+								</GroupBox>
+
+				</StackPanel>
+</UserControl>

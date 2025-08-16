@@ -1,0 +1,38 @@
+﻿<Window x:Class="WinHack.Test.Demos.MonitorDemo"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:WinHack.Test.Demos"
+        mc:Ignorable="d"
+								x:Name="root"
+        Title="MonitorDemo" Height="450" Width="800"
+								DataContext="{Binding RelativeSource={RelativeSource Self}}">
+    <StackPanel>
+								<GroupBox Header="Monitor List">
+												<Grid>
+																<Grid.RowDefinitions>
+																				<RowDefinition Height="Auto" />
+																				<RowDefinition Height="*" />
+																</Grid.RowDefinitions>
+
+																<Button x:Name="monitorRefreshBtn" Command="{Binding EnumerateMonitorsCommand}">Refresh</Button>
+
+																<ListBox Grid.Row="1" x:Name="monitorListBox" ItemsSource="{Binding MonitorList, Mode=OneWay}">
+																				<ListBox.ItemTemplate>
+																								<DataTemplate>
+																												<StackPanel Orientation="Horizontal">
+																																<TextBlock Text="Name: " FontWeight="Bold" Margin="0,0,4,0" />
+																																<TextBlock Text="{Binding Monitor.Name}" Margin="0,0,4,0" />
+																																<TextBlock Text="Size: " FontWeight="Bold" Margin="0,0,4,0" />
+																																<TextBlock Text="{Binding Width}" Margin="0,0,4,0" />
+																																<TextBlock Text="{Binding Height}" />
+																																<Button Command="{Binding OpenPropertiesCommand}">...</Button>
+																												</StackPanel>
+																								</DataTemplate>
+																				</ListBox.ItemTemplate>
+																</ListBox>
+												</Grid>
+								</GroupBox>
+    </StackPanel>
+</Window>

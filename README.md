@@ -13,7 +13,7 @@ WinHack currently targets:
 
 ## Features
 - Utilities for working with window/monitor
-- Local/Global window hook (Mouse, Keyboard, CallWnd, etc) with support for hooking 32-bit process.
+- Local/Global window hook (Mouse, Keyboard, CallWnd, etc) with support for hooking 32-bit process
 - Code hook and detouring
 - GDI manipulation
 - 

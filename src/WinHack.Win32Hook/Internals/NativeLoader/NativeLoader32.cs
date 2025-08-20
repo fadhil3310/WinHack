@@ -10,9 +10,9 @@ using System.Text;
 using System.Threading.Tasks;
 using Windows.Win32.UI.WindowsAndMessaging;
 
-namespace WinHack.WindowHook.Interop.Loader
+namespace WinHack.WindowHook.Internals.NativeLoader
 {
-		public class LowLevelLoader32 : ILowLevelLoader
+		public class NativeLoader32 : INativeLoader
 		{
 				private bool disposedValue;
 
@@ -55,7 +55,7 @@ namespace WinHack.WindowHook.Interop.Loader
 								_surrogatePath = value;
 						}
 				}
-				private string _surrogatePath = "WinHack.WindowHook.LowLevelSurrogate.exe";
+				private string _surrogatePath = "WinHack.WindowHook.NativeSurrogate.exe";
 
 				/// <summary>
 				/// The surrogate's pipe server name. 
@@ -99,7 +99,7 @@ namespace WinHack.WindowHook.Interop.Loader
 								_libraryPath = value;
 						}
 				}
-				private string _libraryPath = "WinHack.WindowHook.LowLevel32.dll";
+				private string _libraryPath = "WinHack.WindowHook.Native32.dll";
 
 				/// <summary>
 				/// The pipe client to connect to the pipe server.
@@ -170,10 +170,10 @@ namespace WinHack.WindowHook.Interop.Loader
 						}
 				}
 
-				public void RemoveHook(WindowHookData hook)
-				{
-						throw new NotImplementedException();
-				}
+				//public void RemoveHook(WindowHookNativeResult hook)
+				//{
+				//		throw new NotImplementedException();
+				//}
 
 				// ========================== End Public Functions ==========================
 

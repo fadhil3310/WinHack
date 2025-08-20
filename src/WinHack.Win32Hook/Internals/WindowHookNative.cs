@@ -10,30 +10,34 @@ using Windows.Win32.UI.WindowsAndMessaging;
 using WinHack.Core.Utility;
 using Windows.Win32.System.Threading;
 using WinHack.Core.Systems.Process;
-using WinHack.WindowHook.Interop.Loader;
+using WinHack.WindowHook.Internals.NativeLoader;
 using WinHack.Core.Windowing;
 using System.IO.Pipes;
 using System.Diagnostics;
 
-namespace WinHack.WindowHook.Interop
+using static WinHack.Core.Utility.Thrower;
+
+namespace WinHack.WindowHook.Internals
 {
-		public sealed class WindowHookLowLevel : IDisposable
+		public sealed class WindowHookNative
 		{
-				bool disposedValue;
+				//static bool IsDisposed;
 
 				// ==================== Singleton ====================
-				private static readonly Lazy<WindowHookLowLevel> lazy =
-						new Lazy<WindowHookLowLevel>(() => new WindowHookLowLevel());
-				public static WindowHookLowLevel Instance { get { return lazy.Value; } }
-				private unsafe WindowHookLowLevel()
-				{
-						Loader32 = new LowLevelLoader32();
-						Loader64 = new LowLevelLoader64();
-				}
+				//private static readonly Lazy<WindowHookNative> lazy =
+				//		new Lazy<WindowHookNative>(() => new WindowHookNative());
+				//public static WindowHookNative Instance { get { return lazy.Value; } }
+				//private unsafe WindowHookNative()
+				//{
+				//		Loader32 = new NativeLoader32();
+				//		Loader64 = new NativeLoader64();
+				//}
 				// ================== End Singleton ==================
 
 
-				public string HookPipeName
+				// ========================== Static Properties/Fields ==========================
+
+				public static string HookPipeName
 				{
 						get => _hookPipeName;
 						set
@@ -46,32 +50,48 @@ namespace WinHack.WindowHook.Interop
 								_hookPipeName = value;
 						}
 				}
-				private string _hookPipeName = "";
+				private static string _hookPipeName = "";
 
 				/// <summary>
 				/// The loader for the 32-bit surrogate process as the host for the 32-bit dll.
 				/// </summary>
-				public LowLevelLoader32 Loader32 { get; private set; }
+				public static NativeLoader32 Loader32 { get; private set; } = new();
 				/// <summary>
 				/// The loader for the 64-bit dll.
 				/// </summary>
-				public LowLevelLoader64 Loader64 { get; private set; }
+				public static NativeLoader64 Loader64 { get; private set; } = new();
+
+				// ========================== End Static Properties/Fields ==========================
+
+
+				// ========================== Local Properties/Fields ==========================
+
+				public HHOOK HHOOK { get; private set; }
+				public WINDOWS_HOOK_ID HookId { get; private set; }
+				public Thread? PipeServerThread { get; private set; }
+
+				public bool IsInstalled => !HHOOK.IsNull;
+
+				// ========================== End Local Properties/Fields ==========================
 
 
 				// ========================== Public Functions ==========================
+
+				public WindowHookNative(WINDOWS_HOOK_ID hookId)
+				{
+						HookId = hookId;
+				}
 
 				/// <summary>
 				/// Create local hook.
 				/// </summary>
 				/// <typeparam name="T"></typeparam>
-				/// <param name="hookType"></param>
 				/// <param name="window"></param>
 				/// <param name="onMessageReceived"></param>
 				/// <returns></returns>
-				public WindowHookData CreateLocalHook<T>(WINDOWS_HOOK_ID hookType, HackWindow window, Func<int, T?, int> onMessageReceived, Action? onEnded)
+				public void InstallLocal(HackWindow Window, Func<int, WPARAM, byte[]?, int> onMessageReceived, Action? onEnded)
 				{
-						WindowHookData? hookData = null;
-						var threadProcessId = window.GetThreadProcessID();
+						var threadProcessId = Window.GetThreadProcessID();
 						var process = new HackProcess(threadProcessId.ProcessId, PROCESS_ACCESS_RIGHTS.PROCESS_QUERY_INFORMATION);
 
 						HHOOK? hHook;
@@ -79,25 +99,31 @@ namespace WinHack.WindowHook.Interop
 						{
 								Debug.WriteLine("Process is 32 bit");
 								// Initialize the loader first if hasn't been initialized.
-								if (!Loader32.IsInitialized)
+								if (!Loader32!.IsInitialized)
 										Loader32.Initialize(_hookPipeName);
 
-								hHook = Loader32.CreateLocalHook(hookType, threadProcessId.ThreadId);
+								hHook = Loader32.CreateLocalHook(HookId, threadProcessId.ThreadId);
 						}
 						else
 						{
 								Debug.WriteLine("Process is 64 bit");
 								// Initialize the loader first if hasn't been initialized.
-								if (!Loader64.IsInitialized)
+								if (!Loader64!.IsInitialized)
 										Loader64.Initialize(_hookPipeName);
 
-								hHook = Loader64.CreateLocalHook(hookType, threadProcessId.ThreadId);
+								hHook = Loader64.CreateLocalHook(HookId, threadProcessId.ThreadId);
 						}
 
-						Thread pipeServerThread = CreatePipeServer((uint)hookType, threadProcessId.ThreadId, onMessageReceived, onEnded);
-						hookData = new WindowHookData((HHOOK)hHook, pipeServerThread);
+						PipeServerThread = CreatePipeServer((uint)HookId, threadProcessId.ThreadId, onMessageReceived, onEnded);
+				}
 
-						return hookData!;
+				public void Remove()
+				{
+						if (!IsInstalled)
+								throw new InvalidOperationException("Hook isn't installed.");
+
+						if (!WHookPI.UnhookWindowsHookEx(HHOOK))
+								ThrowWin32(true, "Failed removing hook.");
 				}
 
 				// ========================== End Public Functions ==========================
@@ -105,7 +131,7 @@ namespace WinHack.WindowHook.Interop
 
 				// ========================== Private Functions ==========================
 
-				private Thread CreatePipeServer<T>(uint hookType, uint threadId, Func<int, T?, int> onMessageReceived, Action? onEnded)
+				private Thread CreatePipeServer(uint hookType, uint threadId, Func<int, WPARAM, byte[]?, int> onMessageReceived, Action? onEnded)
 				{
 						if (string.IsNullOrEmpty(_hookPipeName))
 								throw new ArgumentException("Main Pipe Name can't be empty.");
@@ -129,14 +155,14 @@ namespace WinHack.WindowHook.Interop
 										pipeServer.WaitForConnection();
 										Debug.WriteLine("Client connected!");
 
-										PipeStreamProcessor<T> processor = new(pipeServer);
+										PipeStreamProcessor processor = new(pipeServer);
 
 										while (true)
 										{
-												T? clientMessage = processor.WaitMessage(out int nCode);
+												byte[]? clientMessage = processor.WaitMessage(out int nCode, out WPARAM wParam);
 												Debug.WriteLine($"Got message from client: {clientMessage}");
 
-												int sendMessage = onMessageReceived(nCode, clientMessage);
+												int sendMessage = onMessageReceived(nCode, wParam, clientMessage);
 												processor.SendMessage(sendMessage);
 												Debug.WriteLine($"Message sent to client");
 										}
@@ -153,16 +179,16 @@ namespace WinHack.WindowHook.Interop
 
 				// ========================== End Private Functions ==========================
 
-				public void Dispose()
-				{
-						if (disposedValue) return;
+				//public static void Dispose()
+				//{
+				//		if (IsDisposed) return;
 
-						Loader64.Dispose();
+				//		Loader64.Dispose();
 
-						disposedValue = true;
-				}
+				//		IsDisposed = true;
+				//}
 
-				private class PipeStreamProcessor<T>
+				private class PipeStreamProcessor
 				{
 						private Stream pipeStream;
 
@@ -171,49 +197,38 @@ namespace WinHack.WindowHook.Interop
 								this.pipeStream = pipeStream;
 						}
 
-						public T? WaitMessage(out int nCode)
+						public byte[]? WaitMessage(out int nCode, out WPARAM wParam)
 						{
-								// Hook code.
-								byte[] nCodeBuffer = new byte[sizeof(int)];
-								if (pipeStream.Read(nCodeBuffer, 0, sizeof(int)) == 0)
-								{
-										Debug.WriteLine($"Failed reading nCode");
-										nCode = -1;
-										return default;
-								}
-								nCode = BitConverter.ToInt32(nCodeBuffer, 0);
-								//Debug.WriteLine($"nCode: {nCode}");
+								int _nCode = -1;
+								uint _wParam = 0;
 
-								// The size of the lParam.
-								byte[] lParamSizeBuffer = new byte[sizeof(int)];
-								if (pipeStream.Read(lParamSizeBuffer, 0, sizeof(int)) == 0)
+								try
 								{
-										Debug.WriteLine($"Failed reading lParamSize");
-										return default;
-								}
-								int lParamSize = BitConverter.ToInt32(lParamSizeBuffer, 0);
-								//Debug.WriteLine($"lParamSize: {lParamSize}");
+										BinaryReader reader = new(pipeStream);
+										_nCode = reader.ReadInt32();
+										_wParam = reader.ReadUInt32();
 
-								// The lParam bytes buffer.
-								byte[] lParamBuffer = new byte[lParamSize];
-								int lParamReadSize = pipeStream.Read(lParamBuffer, 0, lParamSize);
-								if (lParamReadSize == 0 || lParamReadSize < lParamSize)
-								{
-										Debug.WriteLine($"Failed reading lParam, read size: {lParamReadSize}");
-										return default;
-								}
+										int lParamSize = (int)reader.ReadUInt32();
 
-								// Deserialize lParam.
-								unsafe
-								{
-										if (lParamBuffer.Length < sizeof(T))
-												throw new InvalidOperationException("Buffer too small.");
-
-										fixed (byte* ptr = lParamBuffer)
+										// The lParam bytes buffer.
+										byte[] lParamBuffer = new byte[lParamSize];
+										int lParamReadSize = pipeStream.Read(lParamBuffer, 0, lParamSize);
+										if (lParamReadSize == 0 || lParamReadSize < lParamSize)
 										{
-												T lParam = *(T*)ptr;
-												return lParam;
+												throw new IOException("Failed reading lParam.");
 										}
+
+										nCode = _nCode;
+										wParam = _wParam;
+										return lParamBuffer;
+								}
+								catch (Exception e)
+								{
+										Debug.WriteLine($"Failed reading message, reason: {e.Message} {e.StackTrace}");
+
+										nCode = _nCode;
+										wParam = _wParam;
+										return null;
 								}
 						}
 

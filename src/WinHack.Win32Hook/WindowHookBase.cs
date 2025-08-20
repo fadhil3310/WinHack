@@ -8,34 +8,32 @@ using Windows.Win32.UI.WindowsAndMessaging;
 using WinHack.Core.Base;
 using WinHack.Core.Utility;
 using WinHack.Core.Windowing;
-using WinHack.WindowHook.Interop;
+using WinHack.WindowHook.Internals;
 using static WinHack.Core.Utility.Thrower;
 
 namespace WinHack.WindowHook
 {
 		public abstract class WindowHookBase : IWinHackDisposable
 		{
-				// ======================= Private Variables =======================
+				// ======================= Private Properties/Fields =======================
 				protected bool disposedValue;
 				protected readonly List<IDisposable> disposables = [];
-				// ======================= End Private Variables =======================
+				// ======================= End Private Properties/Fields =======================
 
 
-				// ======================= Public Variables =======================
+				// ======================= Public Properties/Fields =======================
 				public HackWindow? Window { get; protected set; }
+				public abstract HHOOK HHOOK { get; }
+				// ======================= End Public Properties/Fields =======================
 
-				public WindowHookData HookData { get; protected set; }
-				// ======================= End Public Variables =======================
 
-
-				protected WindowHookBase(HackWindow? window, WindowHookData hookData)
+				protected WindowHookBase(HackWindow? window)
 				{
 						Window = window;
-						HookData = hookData;
 				}
 
-
 				public abstract void Remove();
+
 
 				// ======================= Dispose =======================
 				public void RetainResources(params IDisposable[] resources)

@@ -1,0 +1,9 @@
+﻿# API
+CallNextHookEx
+SetWindowsHookEx
+UnhookWindowsHookEx
+
+# Structs
+CWPSTRUCT
+MOUSEHOOKSTRUCT
+MSLLHOOKSTRUCT

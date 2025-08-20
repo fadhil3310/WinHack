@@ -32,13 +32,13 @@ extern "C" WINHACKHOOK_API HHOOK CreateLocalHook(int hookId, DWORD threadId);
 ///// <returns></returns>
 //extern "C" WINHACKHOOK_API HHOOK CreateCallWndHook(DWORD threadId);
 
-/// <summary>
-/// Create global hook
-/// </summary>
-/// <param name="idHook"></param>
-/// <param name="callback"></param>
-/// <returns></returns>
-extern "C" WINHACKHOOK_API HHOOK CreateGlobalHook(int hookId, HOOKPROC callback);
+///// <summary>
+///// Create global hook
+///// </summary>
+///// <param name="idHook"></param>
+///// <param name="callback"></param>
+///// <returns></returns>
+//extern "C" WINHACKHOOK_API HHOOK CreateGlobalHook(int hookId, HOOKPROC callback);
 
 /// <summary>
 /// Remove hook

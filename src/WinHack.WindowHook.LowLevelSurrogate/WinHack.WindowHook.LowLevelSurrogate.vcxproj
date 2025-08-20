@@ -24,6 +24,7 @@
     <ProjectGuid>{a12a064f-098e-4782-95a5-14ae616b75dd}</ProjectGuid>
     <RootNamespace>WinHackWindowHookLowLevelSurrogate</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+    <ProjectName>WinHack.WindowHook.NativeSurrogate</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -71,10 +72,10 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <OutDir>..\..\build\WinHack.WindowHook.LowLevelSurrogate</OutDir>
+    <OutDir>..\..\build\WinHack.WindowHook.NativeSurrogate</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <OutDir>..\..\build\WinHack.WindowHook.LowLevelSurrogate</OutDir>
+    <OutDir>..\..\build\WinHack.WindowHook.NativeSurrogate</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -135,7 +136,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="WinHack.WindowHook.LowLevelSurrogate.cpp" />
+    <ClCompile Include="WinHack.WindowHook.NativeSurrogate.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

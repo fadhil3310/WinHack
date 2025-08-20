@@ -113,12 +113,12 @@ bool setup_pipe(std::wofstream& file, DWORD hookId)
 /// <param name="lParam"></param>
 /// <param name="cblParam"></param>
 /// <returns></returns>
-int call_hook_callback(std::wofstream& file, int nCode, LPARAM lParam, size_t cblParam)
+int call_hook_callback(std::wofstream& file, int nCode, WPARAM wParam, LPARAM lParam, size_t cblParam)
 {
   file << "cblParam: " << cblParam << "\n";
 
   // Write a message to be sent to the hook creator.
-  size_t cbMessage = sizeof(int32_t) + sizeof(uint32_t) + cblParam;
+  size_t cbMessage = sizeof(int32_t) + sizeof(uint32_t) + sizeof(uint32_t) + cblParam;
   char* message = (char*)malloc(cbMessage);
   // Check if failed to allocate memory for message.
   if (message)
@@ -181,22 +181,17 @@ int call_hook_callback(std::wofstream& file, int nCode, LPARAM lParam, size_t cb
 // ============================ Hook Procedures ============================
 
 
-/// <summary>
-/// Hook procedure for CallWnd hook
-/// </summary>
-/// <param name="nCode"></param>
-/// <param name="wParam"></param>
-/// <param name="lParam"></param>
-/// <returns></returns>
-LRESULT CALLBACK callwnd_hook_proc(int nCode, WPARAM wParam, LPARAM lParam)
+int process_hook_proc(int idHook, size_t cblParam, int nCode, WPARAM wParam, LPARAM lParam)
 {
   std::wofstream file("C:\\Users\\Fadhil\\Desktop\\test.txt", std::ios_base::app);
   file << "Called! " << nCode << "\n";
   file << "Try setup pipe\n";
 
-  if (setup_pipe(file, WH_CALLWNDPROC))
+  int result = 0;
+
+  if (setup_pipe(file, idHook))
   {
-    int result = call_hook_callback(file, nCode, lParam, sizeof(CWPSTRUCT));
+    result = call_hook_callback(file, nCode, wParam, lParam, cblParam);
   }
   else
   {
@@ -204,7 +199,55 @@ LRESULT CALLBACK callwnd_hook_proc(int nCode, WPARAM wParam, LPARAM lParam)
   }
 
   file.close();
-  return CallNextHookEx(NULL, nCode, wParam, lParam);
+  return result;
+}
+
+/// <summary>
+/// Hook procedure for CallWnd hook
+/// </summary>
+LRESULT CALLBACK callwnd_hook_proc(int nCode, WPARAM wParam, LPARAM lParam)
+{
+  int result = process_hook_proc(WH_CALLWNDPROC, sizeof(CWPSTRUCT), nCode, wParam, lParam);
+  if (nCode < 0 || result > 0)
+    return CallNextHookEx(NULL, nCode, wParam, lParam);
+  else
+    return 0;
+}
+
+/// <summary>
+/// Hook procedure for CBT hook
+/// </summary>
+LRESULT CALLBACK cbt_hook_proc(int nCode, WPARAM wParam, LPARAM lParam)
+{
+  int result = process_hook_proc(WH_CBT, sizeof(CWPSTRUCT), nCode, wParam, lParam);
+  if (nCode < 0 || result > 0)
+    return CallNextHookEx(NULL, nCode, wParam, lParam);
+  else
+    return 0;
+}
+
+/// <summary>
+/// Hook procedure for Keyboard hook
+/// </summary>
+LRESULT CALLBACK keyboard_hook_proc(int nCode, WPARAM wParam, LPARAM lParam)
+{
+  int result = process_hook_proc(WH_KEYBOARD, 32, nCode, wParam, lParam);
+  if (nCode < 0 || result > 0)
+    return CallNextHookEx(NULL, nCode, wParam, lParam);
+  else
+    return 0;
+}
+
+/// <summary>
+/// Hook procedure for Mouse hook
+/// </summary>
+LRESULT CALLBACK mouse_hook_proc(int nCode, WPARAM wParam, LPARAM lParam)
+{
+  int result = process_hook_proc(WH_MOUSE, sizeof(MOUSEHOOKSTRUCT), nCode, wParam, lParam);
+  if (nCode < 0 || result > 0)
+    return CallNextHookEx(NULL, nCode, wParam, lParam);
+  else
+    return 0;
 }
 
 // ============================ End Hook Procedures ============================
@@ -238,7 +281,7 @@ HHOOK CreateLocalHook(int hookId, DWORD threadId)
     file.close();
     return {};
   }
-  file << "CreateHook!" << " Hook Id: " << hookId << ", Thread Id: " << threadId << ", Main pipe name: " << MAIN_PIPE_NAME << "\n";
+  file << "CreateLocalHook!" << " Hook Id: " << hookId << ", Thread Id: " << threadId << ", Main pipe name: " << MAIN_PIPE_NAME << "\n";
 
   // Get the appropriate hook procedure.
   HOOKPROC hookProc = nullptr;
@@ -247,6 +290,12 @@ HHOOK CreateLocalHook(int hookId, DWORD threadId)
   case WH_CALLWNDPROC:
     hookProc = reinterpret_cast<HOOKPROC>(callwnd_hook_proc);
     break;
+  case WH_KEYBOARD:
+    hookProc = reinterpret_cast<HOOKPROC>(keyboard_hook_proc);
+    break;
+  case WH_MOUSE:
+    hookProc = reinterpret_cast<HOOKPROC>(mouse_hook_proc);
+    break;
   // Return an empty struct if there's no procedure created 
   // for the requested hook type yet.
   default:
@@ -254,8 +303,7 @@ HHOOK CreateLocalHook(int hookId, DWORD threadId)
   }
 
   // Create the hook.
-  HHOOK hHook = SetWindowsHookEx(WH_CALLWNDPROC, reinterpret_cast<HOOKPROC>(hookProc), CURRENT_HMODULE, threadId);
-  file << "Finish creating callwnd hook\n";
+  HHOOK hHook = SetWindowsHookEx(hookId, hookProc, CURRENT_HMODULE, threadId);
 
   // If failed creating hook, return an empty struct,
   // if not, return the created hook's handle.
@@ -268,11 +316,6 @@ HHOOK CreateLocalHook(int hookId, DWORD threadId)
 
   file.close();
   return hHook;
-}
-
-HHOOK CreateGlobalHook(int idHook, HOOKPROC callback)
-{
-  return {};
 }
 
 bool RemoveHook(HHOOK& hHook) {

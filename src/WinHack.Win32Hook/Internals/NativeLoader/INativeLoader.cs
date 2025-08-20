@@ -7,9 +7,9 @@ using Windows.Win32.Foundation;
 using Windows.Win32.UI.WindowsAndMessaging;
 using WinHack.Core.Windowing;
 
-namespace WinHack.WindowHook.Interop.Loader
+namespace WinHack.WindowHook.Internals.NativeLoader
 {
-		internal interface ILowLevelLoader : IDisposable
+		internal interface INativeLoader : IDisposable
 		{
 				bool IsInitialized { get; }
 
@@ -17,6 +17,6 @@ namespace WinHack.WindowHook.Interop.Loader
 
 				HHOOK CreateLocalHook(WINDOWS_HOOK_ID hookId, uint threadId);
 
-				void RemoveHook(WindowHookData hook);
+				//void RemoveHook(WindowHookNativeResult hook);
 		}
 }

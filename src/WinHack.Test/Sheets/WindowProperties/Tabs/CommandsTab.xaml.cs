@@ -15,7 +15,7 @@ using CommunityToolkit.Mvvm.Input;
 using DependencyPropertyGenerator;
 using Windows.Win32.Foundation;
 using WinHack.WindowHook;
-using WinHack.WindowHook.Local;
+using WinHack.WindowHook.Hooks;
 using HackWindow = WinHack.Core.Windowing.HackWindow;
 
 

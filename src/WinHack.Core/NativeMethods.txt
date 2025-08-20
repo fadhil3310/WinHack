@@ -11,16 +11,13 @@ GetClientRect
 SetWindowPos
 SetParent
 ShowWindow
-SetWindowsHookEx
 GetWindowThreadProcessId
-CallNextHookEx
 
 # Constants/Structs
 HWND_BOTTOM
 HWND_NOTOPMOST
 HWND_TOP
 HWND_TOPMOST
-CWPSTRUCT
 
 
 # ========= Screen =========

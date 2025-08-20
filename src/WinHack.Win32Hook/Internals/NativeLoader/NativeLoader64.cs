@@ -13,7 +13,7 @@ using WinHack.Core.Utility;
 using WinHack.Core.Windowing;
 using static WinHack.Core.Utility.Thrower;
 
-namespace WinHack.WindowHook.Interop.Loader
+namespace WinHack.WindowHook.Internals.NativeLoader
 {
 		[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
 		public delegate bool InitializeDelegate([MarshalAs(UnmanagedType.LPWStr)] string mainPipeName);
@@ -22,10 +22,10 @@ namespace WinHack.WindowHook.Interop.Loader
 		public delegate HHOOK CreateLocalHookDelegate(int hookId, uint threadId);
 
 		[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-		public delegate bool RemoveHookDelegate(WindowHookData hookData);
+		public delegate bool RemoveHookDelegate(WindowHookNativeResult hookData);
 
 
-		public class LowLevelLoader64 : ILowLevelLoader
+		public class NativeLoader64 : INativeLoader
 		{
 				bool disposedValue;
 
@@ -58,7 +58,7 @@ namespace WinHack.WindowHook.Interop.Loader
 								_libraryPath = value;
 						}
 				}
-				private string _libraryPath = "WinHack.WindowHook.LowLevel64.dll";
+				private string _libraryPath = "WinHack.WindowHook.Native64.dll";
 
 
 				// DLL procedures.
@@ -114,18 +114,18 @@ namespace WinHack.WindowHook.Interop.Loader
 						return hookData;
 				}
 
-				/// <summary>
-				/// Remove hook.
-				/// </summary>
-				/// <param name="hook"></param>
-				public void RemoveHook(WindowHookData hook)
-				{
-						if (!IsInitialized)
-								throw new InvalidOperationException("Cannot call this method before initialization.");
+				///// <summary>
+				///// Remove hook.
+				///// </summary>
+				///// <param name="hook"></param>
+				//public void RemoveHook(WindowHookNativeResult hook)
+				//{
+				//		if (!IsInitialized)
+				//				throw new InvalidOperationException("Cannot call this method before initialization.");
 
-						if (!removeHook(hook))
-								ThrowWin32(true, "Failed removing hook.");
-				}
+				//		if (!removeHook(hook))
+				//				ThrowWin32(true, "Failed removing hook.");
+				//}
 
 				public void Dispose()
 				{

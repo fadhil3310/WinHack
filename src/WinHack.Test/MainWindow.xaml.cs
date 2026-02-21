@@ -11,7 +11,7 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using WinHack.Core.Displays;
 using WinHack.Test.Demos;
-using WinHack.WindowHook.Internals;
+using WinHack.WindowHook;
 
 namespace WinHack.Test
 {
@@ -27,8 +27,8 @@ namespace WinHack.Test
 				{
 						InitializeComponent();
 
-						WindowHookNative.HookPipeName = "WinHackTest";
-						WindowHookNative.Loader32.SurrogatePipeName = "WinHackTestSurrogate";
+						WindowHookOptions.HookPipeName = "WinHackTest";
+						WindowHookOptions.Surrogate32PipeName = "WinHackTestSurrogate";
 				}
 
 				private void windowingButton_Click(object sender, RoutedEventArgs e)

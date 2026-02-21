@@ -23,7 +23,6 @@ namespace WinHack.WindowHook
 
 				// ======================= Public Properties/Fields =======================
 				public HackWindow? Window { get; protected set; }
-				public abstract HHOOK HHOOK { get; }
 				// ======================= End Public Properties/Fields =======================
 
 

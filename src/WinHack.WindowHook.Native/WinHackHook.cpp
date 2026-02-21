@@ -5,6 +5,7 @@
 #include <mutex>
 #include <fstream>
 #include <string>
+#include <map>
 
 #pragma data_seg("SHARED")
 bool IS_INITIALIZED = false;
@@ -12,6 +13,8 @@ wchar_t MAIN_PIPE_NAME[247] = L"";
 #pragma data_seg()
 #pragma comment(linker, "/section:SHARED,RWS")
 
+
+std::map<int, HHOOK> hHookList;
 
 
 // ============================ Static Variables ============================
@@ -118,20 +121,25 @@ int call_hook_callback(std::wofstream& file, int nCode, WPARAM wParam, LPARAM lP
   file << "cblParam: " << cblParam << "\n";
 
   // Write a message to be sent to the hook creator.
+  // (nCode, wParam, cblParam, lParam).
   size_t cbMessage = sizeof(int32_t) + sizeof(uint32_t) + sizeof(uint32_t) + cblParam;
   char* message = (char*)malloc(cbMessage);
+
+
   // Check if failed to allocate memory for message.
   if (message)
   {
     memset(message, 0, cbMessage);
-    // The nCode.
-    //memset(message, nCode, sizeof(int32_t));
+
+    // Copy nCode.
     *(message) = nCode;
-    // The size of the lParam.
-    *(message + sizeof(int32_t)) = cblParam;
-    //memset(message + sizeof(int32_t), cblParam, sizeof(uint32_t));
-    // Serialize the lParam.
-    memcpy(message + sizeof(int32_t) + sizeof(uint32_t), (void*)lParam, cblParam);
+    // Copy wParam.
+    *(message + sizeof(int32_t)) = wParam;
+    //memcpy(message + sizeof(int32_t), (void*)wParam, sizeof(uint32_t));
+    // Copy cblParam.
+    *(message + sizeof(int32_t) + sizeof(uint32_t)) = cblParam;
+    // Copy lParam.
+    memcpy(message + sizeof(int32_t) + sizeof(uint32_t) + sizeof(uint32_t), (void*)lParam, cblParam);
   }
   else
   {
@@ -270,7 +278,7 @@ bool Initialize(const wchar_t* mainPipeName)
   return true;
 }
 
-HHOOK CreateLocalHook(int hookId, DWORD threadId)
+int CreateHook(int hookType, DWORD threadId)
 {
   std::wofstream file("C:\\Users\\Fadhil\\Desktop\\test.txt", std::ios_base::app);
 
@@ -281,11 +289,11 @@ HHOOK CreateLocalHook(int hookId, DWORD threadId)
     file.close();
     return {};
   }
-  file << "CreateLocalHook!" << " Hook Id: " << hookId << ", Thread Id: " << threadId << ", Main pipe name: " << MAIN_PIPE_NAME << "\n";
+  file << "CreateHook!" << " Hook Type: " << hookType << ", Thread Id: " << threadId << ", Main pipe name: " << MAIN_PIPE_NAME << "\n";
 
   // Get the appropriate hook procedure.
   HOOKPROC hookProc = nullptr;
-  switch (hookId)
+  switch (hookType)
   {
   case WH_CALLWNDPROC:
     hookProc = reinterpret_cast<HOOKPROC>(callwnd_hook_proc);
@@ -303,7 +311,7 @@ HHOOK CreateLocalHook(int hookId, DWORD threadId)
   }
 
   // Create the hook.
-  HHOOK hHook = SetWindowsHookEx(hookId, hookProc, CURRENT_HMODULE, threadId);
+  HHOOK hHook = SetWindowsHookEx(hookType, hookProc, CURRENT_HMODULE, threadId);
 
   // If failed creating hook, return an empty struct,
   // if not, return the created hook's handle.
@@ -311,16 +319,26 @@ HHOOK CreateLocalHook(int hookId, DWORD threadId)
   {
     file << "Error: " << GetLastError() << "\n";
     file.close();
-    return {};
+    return 0;
   }
 
+  int hookId = random_int();
+  while (hHookList.count(hookId)) {
+    hookId = random_int();
+  }
+  hHookList.insert({hookId, hHook});
+
   file.close();
-  return hHook;
+  return hookId;
 }
 
-bool RemoveHook(HHOOK& hHook) {
+bool RemoveHook(int hookId) {
+  HHOOK hHook = hHookList.at(hookId);
+
   if (!UnhookWindowsHookEx(hHook))
     return false;
+
+  hHookList.erase(hookId);
   return true;
 }
 

@@ -5,9 +5,8 @@
 #define FULL_REQ_BUFFER_SIZE sizeof(char) + sizeof(int) + sizeof(int)
 #define FULL_ANSWER_BUFFER_SIZE 5120
 
-#define REQ_CREATE_LOCAL_HOOK 0
-#define REQ_CREATE_GLOBAL_HOOK 1
-#define REQ_REMOVE_HOOK 2
+#define REQ_CREATE_HOOK 0
+#define REQ_REMOVE_HOOK 1
 
 
 std::wstring HOOK_PIPE_NAME; // The hook pipe name.
@@ -19,49 +18,55 @@ HANDLE pipeServer; // The pipe server's handle.
 // DLL Procedures.
 typedef bool (*DLL_Initialize)(const wchar_t*);
 DLL_Initialize dll_Initialize;
-typedef HHOOK (*DLL_CreateLocalHook)(int, DWORD);
-DLL_CreateLocalHook dll_CreateLocalHook;
-typedef bool (*DLL_RemoveHook)(HHOOK&);
+typedef int (*DLL_CreateHook)(int, DWORD);
+DLL_CreateHook dll_CreateHook;
+typedef bool (*DLL_RemoveHook)(int);
 DLL_RemoveHook dll_RemoveHook;
 
 
-
-bool answer_create_local_hook(int hookId, DWORD threadId)
+bool answer_remove_hook(int hookId) 
 {
-  HHOOK hHook = dll_CreateLocalHook(hookId, threadId);
+  std::cout << "Answer remove hook\n";
+
+  bool success = dll_RemoveHook(hookId);
 
   // Unused.
   DWORD cbWritten;
 
-  // Send the HHOOK size, or 0 if failed creating the hook.
-  DWORD cbHHook = hHook == NULL ? 0 : sizeof(hHook);
+  std::cout << "Sending remove hook status...\n";
   if (!WriteFile(
     pipeServer,
-    &cbHHook,
-    sizeof(DWORD),
+    &success,
+    sizeof(bool),
     &cbWritten,
     NULL))
   {
-    std::cout << "Failed sending hHook size to client.\n";
+    std::cout << "Failed sending remove hook status to client.\n";
     return false;
   }
 
-  // Send the HHOOK.
-  if (hHook != NULL)
-  {
-    char* hHookBuffer = (char*)malloc(cbHHook);
-    memcpy(hHookBuffer, hHook, cbHHook);
+  return true;
+}
 
-    if (!WriteFile(
-      pipeServer,
-      &hHookBuffer,
-      cbHHook,
-      &cbWritten,
-      NULL))
-    {
-      std::cout << "Failed sending hHook to client.\n";
-      return false;
-    }
+bool answer_create_hook(int hookType, DWORD threadId)
+{
+  std::cout << "Answer create hook\n";
+
+  int hookId = dll_CreateHook(hookType, threadId);
+  
+  // Unused.
+  DWORD cbWritten;
+
+  std::cout << "Sending hook id...\n";
+  if (!WriteFile(
+    pipeServer,
+    &hookId,
+    sizeof(int),
+    &cbWritten,
+    NULL))
+  {
+    std::cout << "Failed sending hook id to client.\n";
+    return false;
   }
 
   return true;
@@ -69,6 +74,8 @@ bool answer_create_local_hook(int hookId, DWORD threadId)
 
 bool process_messages()
 {
+  std::cout << "Start processing messages...\n";
+
   while (true)
   {
     char requestType;
@@ -104,10 +111,15 @@ bool process_messages()
       return false;
     }
 
+    std::cout << "Got message, type: " << requestType << ", message1: " << requestMessage1 << ", message2: " << requestMessage2 << "\n";
+
     switch (requestType)
     {
-    case REQ_CREATE_LOCAL_HOOK:
-      answer_create_local_hook(requestMessage1, requestMessage2);
+    case REQ_CREATE_HOOK:
+      answer_create_hook(requestMessage1, requestMessage2);
+      break;
+    case REQ_REMOVE_HOOK:
+      answer_remove_hook(requestMessage1);
       break;
     }
   }
@@ -115,6 +127,8 @@ bool process_messages()
 
 bool wait_client_connected()
 {
+  std::cout << "Waiting for client to connect...\n";
+
   bool isConnected = ConnectNamedPipe(pipeServer, NULL) ?
     true : (GetLastError() == ERROR_PIPE_CONNECTED);
 
@@ -130,6 +144,8 @@ bool wait_client_connected()
 
 bool create_pipe_server()
 {
+  std::cout << "Creating pipe server...\n";
+
   wchar_t fullPipeName[255] = L"\\\\.\\pipe\\";
   wcscat_s(fullPipeName, SURROGATE_PIPE_NAME.c_str());
 
@@ -156,6 +172,8 @@ bool create_pipe_server()
 
 bool load_library()
 {
+  std::cout << "Loading library...\n";
+
   HMODULE library = LoadLibrary(DLL_PATH.c_str());
   if (library == NULL)
   {
@@ -170,10 +188,10 @@ bool load_library()
     return false;
   }
 
-  dll_CreateLocalHook = (DLL_CreateLocalHook)GetProcAddress(library, "CreateLocalHook");
-  if (dll_CreateLocalHook == NULL)
+  dll_CreateHook = (DLL_CreateHook)GetProcAddress(library, "CreateHook");
+  if (dll_CreateHook == NULL)
   {
-    std::cout << "Failed getting 'CreateLocalHook' proc address.\n";
+    std::cout << "Failed getting 'CreateHook' proc address.\n";
     return false;
   }
 

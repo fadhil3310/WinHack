@@ -15,8 +15,8 @@ namespace WinHack.WindowHook.Internals.NativeLoader
 
 				void Initialize(string hookPipeName);
 
-				HHOOK CreateLocalHook(WINDOWS_HOOK_ID hookId, uint threadId);
+				int CreateHook(WINDOWS_HOOK_ID hookType, uint threadId);
 
-				//void RemoveHook(WindowHookNativeResult hook);
+				void RemoveHook(int hookId);
 		}
 }

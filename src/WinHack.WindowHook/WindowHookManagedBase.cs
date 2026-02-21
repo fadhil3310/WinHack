@@ -9,14 +9,12 @@ using WinHack.WindowHook.Internals;
 
 namespace WinHack.WindowHook
 {
-		public abstract class WindowHookNativeBase : WindowHookBase
+		public abstract class WindowHookManagedBase : WindowHookBase
 		{
-				public override HHOOK HHOOK => hookInstance.HHOOK;
-
-				protected WindowHookNative hookInstance;
+				protected WindowHookManaged hookInstance;
 
 
-				protected WindowHookNativeBase(HackWindow? window, WindowHookNative hookInstance) : base(window)
+				protected WindowHookManagedBase(HackWindow? window, WindowHookManaged hookInstance) : base(window)
 				{
 						this.hookInstance = hookInstance;
 				}

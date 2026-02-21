@@ -7,6 +7,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security.Principal;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using Windows.Win32.UI.WindowsAndMessaging;
 
@@ -18,9 +19,8 @@ namespace WinHack.WindowHook.Internals.NativeLoader
 
 				private enum SurrogateRequestType : byte
 				{
-						CreateLocalHook = 0,
-						CreateGlobalHook = 1,
-						RemoveHook = 2
+						CreateHook = 0,
+						RemoveHook = 1
 				};
 
 				/// <summary>
@@ -34,72 +34,6 @@ namespace WinHack.WindowHook.Internals.NativeLoader
 				/// </summary>
 				public Process? SurrogateProcess => _surrogateProcess;
 				private Process? _surrogateProcess;
-
-				/// <summary>
-				/// The path of the dll. 
-				/// <br />
-				/// <strong>Can only be changed before initialized.</strong>
-				/// </summary>
-				/// <param name="path"></param>
-				/// <exception cref="InvalidOperationException"></exception>
-				public string SurrogatePath
-				{
-						get => _surrogatePath;
-						set
-						{
-								if (IsInitialized)
-										throw new InvalidOperationException("Surrogate process has been launched.");
-								if (string.IsNullOrEmpty(value))
-										throw new ArgumentException("Value can't be empty.");
-
-								_surrogatePath = value;
-						}
-				}
-				private string _surrogatePath = "WinHack.WindowHook.NativeSurrogate.exe";
-
-				/// <summary>
-				/// The surrogate's pipe server name. 
-				/// <br />
-				/// <strong>Can only be changed before initialized.</strong>
-				/// </summary>
-				/// <param name="path"></param>
-				/// <exception cref="InvalidOperationException"></exception>
-				public string SurrogatePipeName
-				{
-						get => _surrogatePipeName;
-						set
-						{
-								if (IsInitialized)
-										throw new InvalidOperationException("Surrogate process has been launched.");
-								if (string.IsNullOrEmpty(value))
-										throw new ArgumentException("Value can't be empty.");
-
-								_surrogatePipeName = value;
-						}
-				}
-				private string _surrogatePipeName = "";
-
-				/// <summary>
-				/// The path of the dll. 
-				/// <br />
-				/// <strong>Can only be changed before initialized.</strong>
-				/// </summary>
-				/// <param name="path"></param>
-				/// <exception cref="InvalidOperationException"></exception>
-				public string LibraryPath
-				{
-						get => _libraryPath;
-						set
-						{
-								if (IsInitialized)
-										throw new InvalidOperationException("Surrogate process has been launched.");
-								if (string.IsNullOrEmpty(value))
-										throw new ArgumentException("Value can't be empty.");
-
-								_libraryPath = value;
-						}
-				}
-				private string _libraryPath = "WinHack.WindowHook.Native32.dll";
 
 				/// <summary>
 				/// The pipe client to connect to the pipe server.
@@ -117,15 +51,19 @@ namespace WinHack.WindowHook.Internals.NativeLoader
 				/// <param name="mainPipeName"></param>
 				public void Initialize(string hookPipeName)
 				{
-						if (string.IsNullOrEmpty(_surrogatePipeName) || string.IsNullOrEmpty(hookPipeName))
+						var surrogatePipeName = WindowHookOptions.Surrogate32PipeName;
+						var surrogatePath = WindowHookOptions.Surrogate32Path;
+						var surrogateLibraryPath = WindowHookOptions.Surrogate32LibraryPath;
+
+						if (string.IsNullOrEmpty(surrogatePipeName) || string.IsNullOrEmpty(hookPipeName))
 								throw new ArgumentException("Surrogate Pipe Name can't be empty.");
 
 						_surrogateProcess = new Process
 						{
 								StartInfo = new ProcessStartInfo
 								{
-										FileName = _surrogatePath,
-										Arguments = $"{hookPipeName} {_surrogatePipeName} {_libraryPath}",
+										FileName = surrogatePath,
+										Arguments = $"{hookPipeName} {surrogatePipeName} {surrogateLibraryPath}",
 										CreateNoWindow = false,
 								}
 						};
@@ -135,45 +73,37 @@ namespace WinHack.WindowHook.Internals.NativeLoader
 						CreatePipeClient();
 				}
 
-				public HHOOK CreateLocalHook(WINDOWS_HOOK_ID hookId, uint threadId)
+				public int CreateHook(WINDOWS_HOOK_ID hookType, uint threadId)
 				{
 						if (!IsInitialized)
-								throw new InvalidOperationException("Cannot call this method before initialization.");
+								throw new InvalidOperationException("Loader hasn't been initialized.");
 
 						// Tell the surrogate that we want to create a local hook.
-						SurrogateSendRequest(SurrogateRequestType.CreateLocalHook, (int)hookId, threadId);
+						SurrogateSendRequest(SurrogateRequestType.CreateHook, (int)hookType, threadId);
 
 						// Read the answer from the surrogate.
-						unsafe
-						{
-								// Read the size of the HHOOK.
-								byte[] _hHookSize = new byte[sizeof(uint)];
-								if (pipeClient.Read(_hHookSize, 0, _hHookSize.Length) == 0)
-										throw new IOException("Failed reading the HHOOK size sent by the surrogate.");
-								uint hHookSize = BitConverter.ToUInt32(_hHookSize, 0);
+						BinaryReader binaryReader = new(pipeClient);
+						int hookId = binaryReader.ReadInt32();
+						if (hookId == 0)
+								throw new InvalidOperationException("Failed creating hook.");
 
-								// If the hook failed to be created, hHookSize value will be 0.
-								if (hHookSize == 0)
-										throw new InvalidOperationException("Failed creating local hook.");
-
-								// Read the HHOOK.
-								byte[] hHookRaw = new byte[hHookSize];
-								if (pipeClient.Read(hHookRaw, 0, hHookRaw.Length) == 0)
-										throw new IOException("Failed reading the HHOOK sent by the surrogate.");
-
-								// Marshal the HHOOK byte buffer to .NET HHOOK.
-								fixed (byte* ptr = hHookRaw)
-								{
-										HHOOK hHook = Marshal.PtrToStructure<HHOOK>((nint)ptr)!;
-										return hHook;
-								}
-						}
+						return hookId;
 				}
 
-				//public void RemoveHook(WindowHookNativeResult hook)
-				//{
-				//		throw new NotImplementedException();
-				//}
+				public void RemoveHook(int hookId)
+				{
+						if (!IsInitialized)
+								throw new InvalidOperationException("Loader hasn't been initialized.");
+
+						// Tell the surrogate that we want to remove a hook.
+						SurrogateSendRequest(SurrogateRequestType.RemoveHook, hookId, 0);
+
+						// Read the answer from the surrogate.
+						BinaryReader binaryReader = new(pipeClient);
+						bool isSuccess = binaryReader.ReadInt32() == 1;
+						if (hookId == 0)
+								throw new InvalidOperationException("Failed removing hook.");
+				}
 
 				// ========================== End Public Functions ==========================
 
@@ -186,9 +116,11 @@ namespace WinHack.WindowHook.Internals.NativeLoader
 				/// <param name="surrogatePipeName"></param>
 				private void CreatePipeClient()
 				{
+						var surrogatePipeName = WindowHookOptions.Surrogate32PipeName;
+
 						pipeClient = new NamedPipeClientStream(
 								".",
-								_surrogatePipeName,
+								surrogatePipeName,
 								PipeDirection.InOut,
 								PipeOptions.None,
 								TokenImpersonationLevel.None);

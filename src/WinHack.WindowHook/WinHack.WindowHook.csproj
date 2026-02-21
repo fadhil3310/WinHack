@@ -1,11 +1,11 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0-windows10.0.20348.0</TargetFramework>
+    <TargetFramework>net10.0-windows10.0.20348.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
 				<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-				<BaseOutputPath>..\..\build\WinHack.Win32Hook\</BaseOutputPath>
+				<BaseOutputPath>..\..\build\WinHack.WindowHook\</BaseOutputPath>
 		</PropertyGroup>
 
   <ItemGroup>
@@ -21,10 +21,5 @@
 
   <ItemGroup>
 				<ProjectReference Include="..\WinHack.Core\WinHack.Core.csproj" />
-				<ProjectReference Include="..\WinHack.Win32Hook.LowLevel\WinHack.Win32Hook.LowLevel.vcxproj">
-						<ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-						<OutputItemType>Content</OutputItemType>
-						<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-				</ProjectReference>
   </ItemGroup>
 </Project>

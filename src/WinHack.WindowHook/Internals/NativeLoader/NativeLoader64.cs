@@ -19,10 +19,10 @@ namespace WinHack.WindowHook.Internals.NativeLoader
 		public delegate bool InitializeDelegate([MarshalAs(UnmanagedType.LPWStr)] string mainPipeName);
 
 		[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-		public delegate HHOOK CreateLocalHookDelegate(int hookId, uint threadId);
+		public delegate int CreateHookDelegate(int hookType, uint threadId);
 
 		[UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-		public delegate bool RemoveHookDelegate(WindowHookNativeResult hookData);
+		public delegate bool RemoveHookDelegate(int hookId);
 
 
 		public class NativeLoader64 : INativeLoader
@@ -64,8 +64,8 @@ namespace WinHack.WindowHook.Internals.NativeLoader
 				// DLL procedures.
 				private InitializeDelegate DLLInitialize => (InitializeDelegate)_dllInitialize.Target!;
 				private GCHandle _dllInitialize;
-				private CreateLocalHookDelegate createLocalHook => (CreateLocalHookDelegate)_createLocalHook.Target!;
-				private GCHandle _createLocalHook;
+				private CreateHookDelegate createHook => (CreateHookDelegate)_createHook.Target!;
+				private GCHandle _createHook;
 				private RemoveHookDelegate removeHook => (RemoveHookDelegate)_removeHook.Target!;
 				private GCHandle _removeHook;
 
@@ -85,8 +85,8 @@ namespace WinHack.WindowHook.Internals.NativeLoader
 						_dllInitialize = GCHandle.Alloc(dgInitialize, GCHandleType.Normal);
 
 						// CreateLocalHook.
-						var dgCreateLocalHook = library.GetProcAddressDelegate<CreateLocalHookDelegate>("CreateLocalHook");
-						_createLocalHook = GCHandle.Alloc(dgCreateLocalHook, GCHandleType.Normal);
+						var dgCreateHook = library.GetProcAddressDelegate<CreateHookDelegate>("CreateHook");
+						_createHook = GCHandle.Alloc(dgCreateHook, GCHandleType.Normal);
 
 						// RemoveHook.
 						var dgRemoveHook = library.GetProcAddressDelegate<RemoveHookDelegate>("RemoveHook");
@@ -102,30 +102,31 @@ namespace WinHack.WindowHook.Internals.NativeLoader
 				/// </summary>
 				/// <param name="window"></param>
 				/// <returns></returns>
-				public HHOOK CreateLocalHook(WINDOWS_HOOK_ID hookId, uint threadId)
+				public int CreateHook(WINDOWS_HOOK_ID hookType, uint threadId)
 				{
 						if (!IsInitialized)
 								throw new InvalidOperationException("Cannot call this method before initialization.");
 
-						Debug.WriteLine("Attempt to create a local hook.");
-						HHOOK hookData = createLocalHook((int)hookId, threadId);
-						if (hookData.IsNull)
-								ThrowWin32(true, "Failed creating a local hook.");
-						return hookData;
+						Debug.WriteLine("Attempt to create a hook.");
+						int hookId = createHook((int)hookType, threadId);
+						if (hookId == 0)
+								ThrowWin32(true, "Failed creating hook.");
+
+						return hookId;
 				}
 
-				///// <summary>
-				///// Remove hook.
-				///// </summary>
-				///// <param name="hook"></param>
-				//public void RemoveHook(WindowHookNativeResult hook)
-				//{
-				//		if (!IsInitialized)
-				//				throw new InvalidOperationException("Cannot call this method before initialization.");
+				/// <summary>
+				/// Remove hook.
+				/// </summary>
+				/// <param name="hook"></param>
+				public void RemoveHook(int hookId)
+				{
+						if (!IsInitialized)
+								throw new InvalidOperationException("Cannot call this method before initialization.");
 
-				//		if (!removeHook(hook))
-				//				ThrowWin32(true, "Failed removing hook.");
-				//}
+						if (!removeHook(hookId))
+								throw new InvalidOperationException("Failed removing hook.");
+				}
 
 				public void Dispose()
 				{
@@ -135,7 +136,7 @@ namespace WinHack.WindowHook.Internals.NativeLoader
 						_library.Free();
 
 						_dllInitialize.Free();
-						_createLocalHook.Free();
+						_createHook.Free();
 						_removeHook.Free();
 
 						disposedValue = true;

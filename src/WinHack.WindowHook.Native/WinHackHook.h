@@ -8,22 +8,24 @@
 
 #include <Windows.h>
 
+#include "Utils.h"
+
 
 extern HMODULE CURRENT_HMODULE;
 
 /// <summary>
-/// Initialize
+/// Initialize.
 /// </summary>
 /// <param name="mainPipeName">The main name to be used for the pipe connection</param>
 /// <returns></returns>
 extern "C" WINHACKHOOK_API bool Initialize(const wchar_t* mainPipeName);
 
 /// <summary>
-/// Create hook
+/// Create hook.
 /// </summary>
 /// <param name="threadId"></param>
 /// <returns></returns>
-extern "C" WINHACKHOOK_API HHOOK CreateLocalHook(int hookId, DWORD threadId);
+extern "C" WINHACKHOOK_API int CreateHook(int hookType, DWORD threadId);
 
 ///// <summary>
 ///// Create CallWnd hook
@@ -41,8 +43,8 @@ extern "C" WINHACKHOOK_API HHOOK CreateLocalHook(int hookId, DWORD threadId);
 //extern "C" WINHACKHOOK_API HHOOK CreateGlobalHook(int hookId, HOOKPROC callback);
 
 /// <summary>
-/// Remove hook
+/// Remove hook.
 /// </summary>
 /// <param name="instance"></param>
 /// <returns></returns>
-extern "C" WINHACKHOOK_API bool RemoveHook(HHOOK& hHook);
+extern "C" WINHACKHOOK_API bool RemoveHook(int hookId);

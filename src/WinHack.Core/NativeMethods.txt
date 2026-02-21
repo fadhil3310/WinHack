@@ -55,6 +55,15 @@ RECT
 BITMAPFILEHEADER
 
 
+# ========= Accesibility =========
+MagInitialize
+MagUninitialize
+MagSetFullscreenTransform
+MagGetFullscreenTransform
+MagSetWindowFilterList
+MagShowSystemCursor
+
+
 # ========= FILE =========
 CreateFile
 WriteFile

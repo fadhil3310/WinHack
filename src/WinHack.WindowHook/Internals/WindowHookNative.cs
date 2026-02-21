@@ -21,37 +21,6 @@ namespace WinHack.WindowHook.Internals
 {
 		public sealed class WindowHookNative
 		{
-				//static bool IsDisposed;
-
-				// ==================== Singleton ====================
-				//private static readonly Lazy<WindowHookNative> lazy =
-				//		new Lazy<WindowHookNative>(() => new WindowHookNative());
-				//public static WindowHookNative Instance { get { return lazy.Value; } }
-				//private unsafe WindowHookNative()
-				//{
-				//		Loader32 = new NativeLoader32();
-				//		Loader64 = new NativeLoader64();
-				//}
-				// ================== End Singleton ==================
-
-
-				// ========================== Static Properties/Fields ==========================
-
-				public static string HookPipeName
-				{
-						get => _hookPipeName;
-						set
-						{
-								if (Loader32.IsInitialized || Loader64.IsInitialized)
-										throw new InvalidOperationException("Can't change hook pipe name if one of the loader has been initialized.");
-								if (value.Length > 247)
-										throw new ArgumentException("Hook pipe name can't be longer than 247 characters.");
-
-								_hookPipeName = value;
-						}
-				}
-				private static string _hookPipeName = "";
-
 				/// <summary>
 				/// The loader for the 32-bit surrogate process as the host for the 32-bit dll.
 				/// </summary>
@@ -64,22 +33,35 @@ namespace WinHack.WindowHook.Internals
 				// ========================== End Static Properties/Fields ==========================
 
 
-				// ========================== Local Properties/Fields ==========================
+				// ========================== Public Local Properties/Fields ==========================
 
-				public HHOOK HHOOK { get; private set; }
-				public WINDOWS_HOOK_ID HookId { get; private set; }
-				public Thread? PipeServerThread { get; private set; }
+				public int HookId { get; private set; }
+				public WINDOWS_HOOK_ID HookType { get; private set; }
 
-				public bool IsInstalled => !HHOOK.IsNull;
+				public bool IsInstalled => HookId != 0;
 
-				// ========================== End Local Properties/Fields ==========================
+				// ========================== End Public Local Properties/Fields ==========================
 
+				// ========================== Private Local Properties/Fields ==========================
+
+				private enum WindowHookNativeState
+				{
+						Uninitialized,
+						Installed,
+						Removed
+				}
+				private WindowHookNativeState state = WindowHookNativeState.Uninitialized;
+
+				private INativeLoader? loader;
+				private Thread? pipeServerThread;
+
+				// ========================== End Private Local Properties/Fields ==========================
 
 				// ========================== Public Functions ==========================
 
-				public WindowHookNative(WINDOWS_HOOK_ID hookId)
+				public WindowHookNative(WINDOWS_HOOK_ID hookType) 
 				{
-						HookId = hookId;
+						HookType = hookType;
 				}
 
 				/// <summary>
@@ -89,32 +71,38 @@ namespace WinHack.WindowHook.Internals
 				/// <param name="window"></param>
 				/// <param name="onMessageReceived"></param>
 				/// <returns></returns>
-				public void InstallLocal(HackWindow Window, Func<int, WPARAM, byte[]?, int> onMessageReceived, Action? onEnded)
+				public void Install(HackWindow window, Func<int, WPARAM, byte[]?, int> onMessageReceived, Action? onEnded)
 				{
-						var threadProcessId = Window.GetThreadProcessID();
+						if (state != WindowHookNativeState.Uninitialized)
+								throw new InvalidOperationException("Hook has been initialized.");
+
+						var hookPipeName = WindowHookOptions.HookPipeName;
+						var threadProcessId = window.GetThreadProcessID();
 						var process = new HackProcess(threadProcessId.ProcessId, PROCESS_ACCESS_RIGHTS.PROCESS_QUERY_INFORMATION);
 
-						HHOOK? hHook;
 						if (!process.Is64Bit())
 						{
 								Debug.WriteLine("Process is 32 bit");
 								// Initialize the loader first if hasn't been initialized.
 								if (!Loader32!.IsInitialized)
-										Loader32.Initialize(_hookPipeName);
+										Loader32.Initialize(hookPipeName);
 
-								hHook = Loader32.CreateLocalHook(HookId, threadProcessId.ThreadId);
+								loader = Loader32;
+								HookId = Loader32.CreateHook(HookType, threadProcessId.ThreadId);
 						}
 						else
 						{
 								Debug.WriteLine("Process is 64 bit");
 								// Initialize the loader first if hasn't been initialized.
 								if (!Loader64!.IsInitialized)
-										Loader64.Initialize(_hookPipeName);
+										Loader64.Initialize(hookPipeName);
 
-								hHook = Loader64.CreateLocalHook(HookId, threadProcessId.ThreadId);
+								loader = Loader64;
+								HookId = Loader64.CreateHook(HookType, threadProcessId.ThreadId);
 						}
 
-						PipeServerThread = CreatePipeServer((uint)HookId, threadProcessId.ThreadId, onMessageReceived, onEnded);
+						Thread pipeServerThread = CreatePipeServer((uint)HookType, threadProcessId.ThreadId, onMessageReceived, onEnded);
+						state = WindowHookNativeState.Installed;
 				}
 
 				public void Remove()
@@ -122,8 +110,12 @@ namespace WinHack.WindowHook.Internals
 						if (!IsInstalled)
 								throw new InvalidOperationException("Hook isn't installed.");
 
-						if (!WHookPI.UnhookWindowsHookEx(HHOOK))
-								ThrowWin32(true, "Failed removing hook.");
+						loader!.RemoveHook(HookId);
+						HookId = 0;
+
+						// TODO: Stop and dispose pipe.
+
+						state = WindowHookNativeState.Removed;
 				}
 
 				// ========================== End Public Functions ==========================
@@ -133,13 +125,15 @@ namespace WinHack.WindowHook.Internals
 
 				private Thread CreatePipeServer(uint hookType, uint threadId, Func<int, WPARAM, byte[]?, int> onMessageReceived, Action? onEnded)
 				{
-						if (string.IsNullOrEmpty(_hookPipeName))
+						var hookPipeName = WindowHookOptions.HookPipeName;
+
+						if (string.IsNullOrEmpty(hookPipeName))
 								throw new ArgumentException("Main Pipe Name can't be empty.");
 
 						Thread thread = new(new ThreadStart(() =>
 						{
 								// Create pipe server.
-								string pipeName = _hookPipeName + hookType + "\\" + threadId;
+								string pipeName = hookPipeName + hookType + "\\" + threadId;
 								Debug.WriteLine($"Pipe name: {pipeName}");
 
 								NamedPipeServerStream pipeServer = new(
